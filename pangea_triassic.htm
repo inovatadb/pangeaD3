@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pangea - Earliest Configuration</title>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://d3js.org/topojson.v0.min.js"></script>
+    <style>
+        .land {
+            fill: #654321;  /* Darker brown for ancient Pangea */
+            stroke: #766951;
+            opacity: 0.9;
+        }
+        .boundary {
+            fill: none;
+            stroke: #a5967e;
+        }
+        #map-container {
+            margin: 20px auto;
+            text-align: center;
+            position: relative;
+        }
+        #title {
+            text-align: center;
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
+            margin: 20px;
+        }
+        #subtitle {
+            text-align: center;
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
+            margin: 10px;
+            color: #666;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        .graticule {
+            fill: none;
+            stroke: #777;
+            stroke-width: 0.5px;
+            stroke-opacity: 0.5;
+        }
+        /* Style for the climate zones */
+        .tropical {
+            fill: none;
+            stroke: #FF6B6B;
+            stroke-width: 1px;
+            stroke-dasharray: 5,5;
+            stroke-opacity: 0.6;
+        }
+        .temperate {
+            fill: none;
+            stroke: #4ECDC4;
+            stroke-width: 1px;
+            stroke-dasharray: 5,5;
+            stroke-opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">Pangea - Earliest Configuration</h1>
+    <h2 id="subtitle">Early Pangea Formation</h2>
+    <div id="map-container">
+        <div id="loading">Loading map data...</div>
+    </div>
+
+    <script>
+        var width = 1200,
+            height = 600;
+
+        var projection = d3.geo.equirectangular()
+            .scale(200)
+            .translate([width / 2, height / 2])
+            .rotate([0, 0]);
+
+        var path = d3.geo.path()
+            .projection(projection);
+
+        var svg = d3.select("#map-container").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Add graticules first (so they appear behind the land)
+        var graticule = d3.geo.graticule();
+        svg.append("path")
+            .datum(graticule)
+            .attr("class", "graticule")
+            .attr("d", path);
+
+        // Add climate zones (approximate for Triassic period)
+        // Tropical zone (30°N to 30°S)
+        var tropicalZone = d3.geo.graticule()
+            .extent([[-180, -30], [180, 30]])
+            .step([90, 60]);
+        
+        svg.append("path")
+            .datum(tropicalZone)
+            .attr("class", "tropical")
+            .attr("d", path);
+
+        // Temperate zones (30° to 60° N and S)
+        var temperateZoneN = d3.geo.graticule()
+            .extent([[-180, 30], [180, 60]])
+            .step([90, 30]);
+        
+        var temperateZoneS = d3.geo.graticule()
+            .extent([[-180, -60], [180, -30]])
+            .step([90, 30]);
+
+        svg.append("path")
+            .datum(temperateZoneN)
+            .attr("class", "temperate")
+            .attr("d", path);
+
+        svg.append("path")
+            .datum(temperateZoneS)
+            .attr("class", "temperate")
+            .attr("d", path);
+
+        // We'll use step 140 which represents the earliest configuration
+        d3.json("json/topostep_140.topojson", function(error, world) {
+            // Hide loading message
+            d3.select("#loading").style("display", "none");
+
+            if (error) {
+                console.error("Error loading the data:", error);
+                d3.select("#loading")
+                    .style("display", "block")
+                    .text("Error loading map data. Please try again.");
+                return;
+            }
+
+            // Get the first object in the TopoJSON file
+            var firstKey = Object.keys(world.objects)[0];
+            var land = topojson.object(world, world.objects[firstKey]);
+
+            svg.append("path")
+                .datum(land)
+                .attr("class", "land")
+                .attr("d", path);
+        });
+    </script>
+</body>
+</html>
